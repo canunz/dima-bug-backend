@@ -38,6 +38,19 @@ public class UsuarioEntity {
     protected UsuarioEntity() {
     }
 
+    public UsuarioEntity(Integer id, RolEntity rol, String nombre, String email,
+                         String passwordHash, boolean activo, LocalDateTime fechaCreacion,
+                         LocalDateTime fechaActualizacion) {
+        this.id = id;
+        this.rol = rol;
+        this.nombre = nombre;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.activo = activo;
+        this.fechaCreacion = fechaCreacion;
+        this.fechaActualizacion = fechaActualizacion;
+    }
+
     public Integer getId() {
         return id;
     }

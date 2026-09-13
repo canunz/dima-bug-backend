@@ -27,4 +27,9 @@ public class BCryptPasswordEncoderAdapter implements PasswordEncoderPort {
                 passwordHash
         );
     }
+
+    @Override
+    public String codificar(String passwordPlano) {
+        return passwordEncoder.encode(passwordPlano);
+    }
 }
