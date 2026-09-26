@@ -1,6 +1,7 @@
 package cl.casol.backend;
 
 import cl.casol.backend.conocimiento.application.service.MantenerConocimientoService;
+import cl.casol.backend.conocimiento.application.service.BuscarConocimientoService;
 import cl.casol.backend.conocimiento.domain.Conocimiento;
 import cl.casol.backend.conocimiento.domain.EstadoConocimiento;
 import cl.casol.backend.conocimiento.domain.exception.ClasificacionInvalidaException;
@@ -25,6 +26,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -34,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class Hu03SecurityIntegrationTest {
     @Autowired MockMvc mockMvc;
     @MockitoBean MantenerConocimientoService service;
+    @MockitoBean BuscarConocimientoService buscador;
     @MockitoBean TokenServicePort tokenService;
     @MockitoBean UsuarioRepository usuarioRepository;
 
@@ -82,18 +87,93 @@ class Hu03SecurityIntegrationTest {
     }
 
     @Test
-    void tecnicoPuedeModificarYCambiarEstado() throws Exception {
+    void tecnicoPuedeModificarPeroNoPublicar() throws Exception {
         autenticar("token-tecnico", "TECNICO");
         when(service.modificar(eq(1), anyString(), anyString(), isNull(), isNull(), isNull(), isNull(),
                 isNull(), anyString())).thenReturn(conocimiento());
-        when(service.cambiarEstado(1, EstadoConocimiento.PUBLICADO, "usuario@dimarsa.cl"))
-                .thenReturn(conocimientoPublicado());
         String body = "{\"titulo\":\"Título\",\"descripcion\":\"Descripción\"}";
         mockMvc.perform(put("/api/conocimientos/1").header("Authorization", "Bearer token-tecnico")
                 .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isOk());
         mockMvc.perform(patch("/api/conocimientos/1/estado").header("Authorization", "Bearer token-tecnico")
                 .contentType(MediaType.APPLICATION_JSON).content("{\"estado\":\"PUBLICADO\"}"))
+                .andExpect(status().isForbidden());
+        verify(service, never()).cambiarEstado(anyInt(), any(), anyString());
+    }
+
+    @Test
+    void administradorPuedePublicar() throws Exception {
+        autenticar("token-admin", "ADMINISTRADOR");
+        when(service.cambiarEstado(1, EstadoConocimiento.PUBLICADO, "usuario@dimarsa.cl"))
+                .thenReturn(conocimientoPublicado());
+        mockMvc.perform(patch("/api/conocimientos/1/estado").header("Authorization", "Bearer token-admin")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"estado\":\"PUBLICADO\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value("PUBLICADO"));
+    }
+
+    @Test
+    void patchNoPermiteAsignarEliminado() throws Exception {
+        autenticar("token-admin", "ADMINISTRADOR");
+        mockMvc.perform(patch("/api/conocimientos/1/estado").header("Authorization", "Bearer token-admin")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"estado\":\"ELIMINADO\"}"))
+                .andExpect(status().isBadRequest());
+        verify(service, never()).cambiarEstado(anyInt(), any(), anyString());
+    }
+
+    @Test
+    void patchEstadoSinJwtRecibe401() throws Exception {
+        mockMvc.perform(patch("/api/conocimientos/1/estado")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"estado\":\"PUBLICADO\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void administradorPuedeEliminarLogicamente() throws Exception {
+        autenticar("token-admin", "ADMINISTRADOR");
+        mockMvc.perform(delete("/api/conocimientos/1")
+                        .header("Authorization", "Bearer token-admin"))
+                .andExpect(status().isNoContent());
+        verify(service).eliminar(1, "usuario@dimarsa.cl");
+    }
+
+    @Test
+    void tecnicoNoPuedeEliminar() throws Exception {
+        autenticar("token-tecnico", "TECNICO");
+        mockMvc.perform(delete("/api/conocimientos/1")
+                        .header("Authorization", "Bearer token-tecnico"))
+                .andExpect(status().isForbidden());
+        verify(service, never()).eliminar(anyInt(), anyString());
+    }
+
+    @Test
+    void eliminarSinJwtRecibe401() throws Exception {
+        mockMvc.perform(delete("/api/conocimientos/1")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void eliminarInexistenteRecibe404() throws Exception {
+        autenticar("token-admin", "ADMINISTRADOR");
+        doThrow(new cl.casol.backend.conocimiento.domain.exception.ConocimientoNoEncontradoException(404))
+                .when(service).eliminar(404, "usuario@dimarsa.cl");
+        mockMvc.perform(delete("/api/conocimientos/404")
+                        .header("Authorization", "Bearer token-admin"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void tecnicoNoPuedePublicarIndirectamenteConPostOPut() throws Exception {
+        autenticar("token-tecnico", "TECNICO");
+        when(service.crear(eq("Título"), eq("Descripción"), isNull(), isNull(), isNull(), isNull(),
+                isNull(), eq("usuario@dimarsa.cl"))).thenReturn(conocimiento());
+        when(service.modificar(eq(1), eq("Título"), eq("Descripción"), isNull(), isNull(), isNull(), isNull(),
+                isNull(), eq("usuario@dimarsa.cl"))).thenReturn(conocimiento());
+        String body = "{\"titulo\":\"Título\",\"descripcion\":\"Descripción\",\"estado\":\"PUBLICADO\"}";
+
+        mockMvc.perform(post("/api/conocimientos").header("Authorization", "Bearer token-tecnico")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.estado").value("BORRADOR"));
+        mockMvc.perform(put("/api/conocimientos/1").header("Authorization", "Bearer token-tecnico")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value("BORRADOR"));
     }
 
     private void autenticar(String token, String rol) {

@@ -8,5 +8,6 @@ import java.util.Optional;
 public interface ConocimientoRepository {
     List<Conocimiento> buscarTodos();
     Optional<Conocimiento> buscarPorId(Integer id);
+    Optional<Conocimiento> buscarPorIdIncluidoEliminado(Integer id);
     Conocimiento guardar(Conocimiento conocimiento);
 }

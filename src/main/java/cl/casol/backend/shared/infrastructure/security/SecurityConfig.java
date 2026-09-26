@@ -9,7 +9,10 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.http.HttpMethod;
 
+//PASO IV: Enpoint público
+//Filtro JWT Paso 4: Modificamos. Conecta el filtro con Spring Security. Fin.
 @Configuration
 public class SecurityConfig {
 
@@ -26,7 +29,7 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.disable())
-
+                //Login, JWT, Cliente conserva JWT, Cada request trae JWT, Servidor valida JWT
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
@@ -41,6 +44,8 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.DELETE, "/api/conocimientos/*")
+                        .hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/sistemas/**", "/api/hardware/**", "/api/conocimientos/**",
                                 "/api/frecuencias/**", "/api/departamentos/**", "/api/pruebas/**")
                         .hasAnyRole("ADMINISTRADOR", "TECNICO")

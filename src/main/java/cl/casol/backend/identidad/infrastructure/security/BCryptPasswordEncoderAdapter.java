@@ -4,7 +4,7 @@ import cl.casol.backend.identidad.application.port.out.PasswordEncoderPort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-//Paso 9
+//CASO DE USO: C) Almacenar y validar contraseñas de forma segura.
 
 @Component
 public class BCryptPasswordEncoderAdapter implements PasswordEncoderPort {

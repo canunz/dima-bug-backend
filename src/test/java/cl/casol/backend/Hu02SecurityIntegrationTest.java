@@ -75,6 +75,39 @@ class Hu02SecurityIntegrationTest {
     }
 
     @Test
+    void tecnicoNoPuedeCrearUsuario() throws Exception {
+        autenticarComo("jwt-tecnico", "tecnico@dimarsa.cl", "TECNICO");
+        mockMvc.perform(post("/api/usuarios").header("Authorization", "Bearer jwt-tecnico")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":\"Nuevo\",\"email\":\"nuevo@dimarsa.cl\",\"password\":\"ClaveInicialSegura\",\"rolId\":2}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void tecnicoNoPuedeAsignarOCambiarRol() throws Exception {
+        autenticarComo("jwt-tecnico", "tecnico@dimarsa.cl", "TECNICO");
+        mockMvc.perform(put("/api/usuarios/2").header("Authorization", "Bearer jwt-tecnico")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":\"Usuario\",\"email\":\"usuario@dimarsa.cl\",\"rolId\":1}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void tecnicoNoPuedeActivarODesactivarUsuario() throws Exception {
+        autenticarComo("jwt-tecnico", "tecnico@dimarsa.cl", "TECNICO");
+        mockMvc.perform(patch("/api/usuarios/2/estado").header("Authorization", "Bearer jwt-tecnico")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"activo\":false}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void tecnicoNoPuedeConsultarRolesAdministrativos() throws Exception {
+        autenticarComo("jwt-tecnico", "tecnico@dimarsa.cl", "TECNICO");
+        mockMvc.perform(get("/api/roles").header("Authorization", "Bearer jwt-tecnico"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void sinJwtRecibe401() throws Exception {
         mockMvc.perform(get("/api/usuarios"))
                 .andExpect(status().isUnauthorized());

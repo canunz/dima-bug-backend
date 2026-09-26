@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
-
+//Paso VIII: Manejo de errores
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

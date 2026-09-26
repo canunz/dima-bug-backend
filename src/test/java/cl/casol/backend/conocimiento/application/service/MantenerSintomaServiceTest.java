@@ -16,13 +16,15 @@ import static org.mockito.Mockito.*;
 class MantenerSintomaServiceTest {
     private ConocimientoRepository conocimientos;
     private SintomaRepository sintomas;
+    private IndexarConocimientoService indexador;
     private MantenerSintomaService service;
     private Conocimiento conocimiento;
 
     @BeforeEach void setUp() {
         conocimientos = mock(ConocimientoRepository.class);
         sintomas = mock(SintomaRepository.class);
-        service = new MantenerSintomaService(conocimientos, sintomas);
+        indexador = mock(IndexarConocimientoService.class);
+        service = new MantenerSintomaService(conocimientos, sintomas, indexador);
         conocimiento = mock(Conocimiento.class);
     }
 
@@ -61,6 +63,7 @@ class MantenerSintomaServiceTest {
         assertEquals(9, creado.id());
         assertEquals(4, creado.conocimientoId());
         assertEquals(1, creado.orden());
+        verify(indexador).indexar(4);
     }
 
     @Test void crearConConocimientoInexistenteNoPersiste() {
@@ -77,6 +80,7 @@ class MantenerSintomaServiceTest {
         Sintoma resultado = service.modificar(4, 9, "Nuevo", 2);
 
         assertEquals(new Sintoma(9, 4, "Nuevo", 2), resultado);
+        verify(indexador).indexar(4);
     }
 
     @Test void modificarSintomaInexistenteNoPersiste() {

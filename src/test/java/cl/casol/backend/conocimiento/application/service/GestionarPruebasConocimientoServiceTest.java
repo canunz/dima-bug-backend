@@ -14,6 +14,7 @@ class GestionarPruebasConocimientoServiceTest {
     private ConocimientoRepository conocimientos;
     private PruebaRepository pruebas;
     private ConocimientoPruebaRepository asociaciones;
+    private IndexarConocimientoService indexador;
     private GestionarPruebasConocimientoService service;
     private Conocimiento conocimiento;
     private Prueba prueba;
@@ -22,7 +23,8 @@ class GestionarPruebasConocimientoServiceTest {
         conocimientos = mock(ConocimientoRepository.class);
         pruebas = mock(PruebaRepository.class);
         asociaciones = mock(ConocimientoPruebaRepository.class);
-        service = new GestionarPruebasConocimientoService(conocimientos, pruebas, asociaciones);
+        indexador = mock(IndexarConocimientoService.class);
+        service = new GestionarPruebasConocimientoService(conocimientos, pruebas, asociaciones, indexador);
         conocimiento = mock(Conocimiento.class);
         prueba = new Prueba(3, "Hacer ping", "Responde", true);
     }
@@ -61,6 +63,7 @@ class GestionarPruebasConocimientoServiceTest {
         when(asociaciones.existe(4, 3)).thenReturn(false);
         when(asociaciones.guardar(any())).thenAnswer(invocation -> invocation.getArgument(0));
         assertEquals(new ConocimientoPrueba(4, prueba, 2), service.asociar(4, 3, 2));
+        verify(indexador).indexar(4);
     }
 
     @Test void asociacionUsaOrdenUnoCuandoSeOmite() {
@@ -97,6 +100,7 @@ class GestionarPruebasConocimientoServiceTest {
         assertEquals(5, resultado.orden());
         assertSame(prueba, resultado.prueba());
         verifyNoInteractions(pruebas);
+        verify(indexador).indexar(4);
     }
 
     @Test void actualizarConConocimientoInexistenteNoConsultaAsociacion() {

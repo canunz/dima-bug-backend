@@ -4,6 +4,7 @@ import cl.casol.backend.catalogo.infrastructure.persistence.entity.*;
 import cl.casol.backend.catalogo.infrastructure.persistence.repository.*;
 import cl.casol.backend.conocimiento.application.port.out.ConocimientoRepository;
 import cl.casol.backend.conocimiento.domain.Conocimiento;
+import cl.casol.backend.conocimiento.domain.EstadoConocimiento;
 import cl.casol.backend.conocimiento.infrastructure.persistence.mapper.ConocimientoMapper;
 import cl.casol.backend.conocimiento.infrastructure.persistence.repository.ConocimientoJpaRepository;
 import cl.casol.backend.identidad.infrastructure.persistence.entity.UsuarioEntity;
@@ -31,11 +32,18 @@ public class ConocimientoRepositoryAdapter implements ConocimientoRepository {
 
     @Override
     public List<Conocimiento> buscarTodos() {
-        return repository.findAllByOrderByFechaCreacionDesc().stream().map(ConocimientoMapper::toDomain).toList();
+        return repository.findAllByEstadoNotOrderByFechaCreacionDesc(EstadoConocimiento.ELIMINADO).stream()
+                .map(ConocimientoMapper::toDomain).toList();
     }
 
     @Override
     public Optional<Conocimiento> buscarPorId(Integer id) {
+        return buscarPorIdIncluidoEliminado(id)
+                .filter(conocimiento -> conocimiento.getEstado() != EstadoConocimiento.ELIMINADO);
+    }
+
+    @Override
+    public Optional<Conocimiento> buscarPorIdIncluidoEliminado(Integer id) {
         return repository.findById(id).map(ConocimientoMapper::toDomain);
     }
 

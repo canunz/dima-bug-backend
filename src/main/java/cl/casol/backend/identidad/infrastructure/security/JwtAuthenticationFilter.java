@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
+//Filtro JWT Paso 3: Crear. Esta request pertenece a un usuario autenticado
+
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -112,7 +114,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             null,
                             List.of(authority)
                     );
-
+            //Parte clave es:
             SecurityContextHolder
                     .getContext()
                     .setAuthentication(authentication);

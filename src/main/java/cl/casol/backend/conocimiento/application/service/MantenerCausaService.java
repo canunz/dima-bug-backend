@@ -14,10 +14,13 @@ import java.util.List;
 public class MantenerCausaService {
     private final ConocimientoRepository conocimientos;
     private final CausaRepository causas;
+    private final IndexarConocimientoService indexador;
 
-    public MantenerCausaService(ConocimientoRepository conocimientos, CausaRepository causas) {
+    public MantenerCausaService(ConocimientoRepository conocimientos, CausaRepository causas,
+            IndexarConocimientoService indexador) {
         this.conocimientos = conocimientos;
         this.causas = causas;
+        this.indexador = indexador;
     }
 
     public List<Causa> listar(Integer conocimientoId) {
@@ -28,7 +31,9 @@ public class MantenerCausaService {
     @Transactional
     public Causa crear(Integer conocimientoId, String descripcion, Integer orden) {
         verificarConocimiento(conocimientoId);
-        return causas.guardar(new Causa(null, conocimientoId, descripcion, ordenOValorInicial(orden)));
+        Causa guardada = causas.guardar(new Causa(null, conocimientoId, descripcion, ordenOValorInicial(orden)));
+        indexador.indexar(conocimientoId);
+        return guardada;
     }
 
     @Transactional
@@ -37,7 +42,9 @@ public class MantenerCausaService {
         Causa actual = causas.buscarPorId(causaId)
                 .filter(causa -> conocimientoId.equals(causa.conocimientoId()))
                 .orElseThrow(() -> new CausaNoEncontradaException(causaId));
-        return causas.guardar(new Causa(actual.id(), conocimientoId, descripcion, ordenOValorInicial(orden)));
+        Causa guardada = causas.guardar(new Causa(actual.id(), conocimientoId, descripcion, ordenOValorInicial(orden)));
+        indexador.indexar(conocimientoId);
+        return guardada;
     }
 
     private void verificarConocimiento(Integer conocimientoId) {

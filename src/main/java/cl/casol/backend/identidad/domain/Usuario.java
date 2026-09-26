@@ -1,7 +1,7 @@
 package cl.casol.backend.identidad.domain;
 
 //Paso 1: Objetos del negocio!, Usuario tiene un Rol
-// El dominio no debería necesitar saber que existe: MySQL o PostgreSQL
+// El dominio NO debería necesitar saber que existe: MySQL o PostgreSQL
 import java.time.LocalDateTime;
 
 public class Usuario {

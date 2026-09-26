@@ -26,6 +26,7 @@ class MantenerConocimientoServiceTest {
     private ModuloRepository modulos;
     private FrecuenciaRepository frecuencias;
     private UsuarioRepository usuarios;
+    private IndexarConocimientoService indexador;
     private MantenerConocimientoService service;
 
     @BeforeEach
@@ -33,7 +34,9 @@ class MantenerConocimientoServiceTest {
         conocimientos = mock(ConocimientoRepository.class); hardware = mock(HardwareRepository.class);
         sistemas = mock(SistemaRepository.class); modulos = mock(ModuloRepository.class);
         frecuencias = mock(FrecuenciaRepository.class); usuarios = mock(UsuarioRepository.class);
-        service = new MantenerConocimientoService(conocimientos, hardware, sistemas, modulos, frecuencias, usuarios);
+        indexador = mock(IndexarConocimientoService.class);
+        service = new MantenerConocimientoService(conocimientos, hardware, sistemas, modulos, frecuencias, usuarios,
+                indexador);
         when(conocimientos.guardar(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(usuarios.buscarPorEmail("tecnico@dimarsa.cl")).thenReturn(Optional.of(usuario()));
     }
@@ -84,12 +87,63 @@ class MantenerConocimientoServiceTest {
         assertSame(existente.getCreadoPor(), modificado.getCreadoPor());
         assertEquals(7, modificado.getModificadoPor().getId());
         assertEquals("Nuevo", modificado.getTitulo());
+        verify(indexador).indexar(1);
+        verify(indexador, never()).indexar(argThat(id -> id != null && id != 1));
     }
 
     @Test
     void buscarInexistenteLanza404DeDominio() {
         when(conocimientos.buscarPorId(404)).thenReturn(Optional.empty());
         assertThrows(ConocimientoNoEncontradoException.class, () -> service.buscar(404));
+    }
+
+    @Test
+    void eliminarMarcaEstadoActualizaAuditoriaYRetiraProyeccion() {
+        Conocimiento existente = conocimiento();
+        when(conocimientos.buscarPorIdIncluidoEliminado(1)).thenReturn(Optional.of(existente));
+
+        service.eliminar(1, "tecnico@dimarsa.cl");
+
+        var captor = org.mockito.ArgumentCaptor.forClass(Conocimiento.class);
+        verify(conocimientos).guardar(captor.capture());
+        Conocimiento eliminado = captor.getValue();
+        assertEquals(EstadoConocimiento.ELIMINADO, eliminado.getEstado());
+        assertEquals(7, eliminado.getModificadoPor().getId());
+        assertNotNull(eliminado.getFechaModificacion());
+        assertSame(existente.getCreadoPor(), eliminado.getCreadoPor());
+        verify(indexador).eliminar(1);
+    }
+
+    @Test
+    void eliminarEsIdempotenteSiYaEstaEliminado() {
+        Conocimiento eliminado = new Conocimiento(1, "TÃ­tulo", "DescripciÃ³n", EstadoConocimiento.ELIMINADO,
+                null, null, null, null, null, usuario(), java.time.LocalDateTime.now(), usuario(),
+                java.time.LocalDateTime.now());
+        when(conocimientos.buscarPorIdIncluidoEliminado(1)).thenReturn(Optional.of(eliminado));
+
+        service.eliminar(1, "tecnico@dimarsa.cl");
+
+        verify(conocimientos, never()).guardar(any());
+        verifyNoInteractions(indexador);
+        verify(usuarios, never()).buscarPorEmail(anyString());
+    }
+
+    @Test
+    void eliminarInexistenteLanza404() {
+        when(conocimientos.buscarPorIdIncluidoEliminado(404)).thenReturn(Optional.empty());
+        assertThrows(ConocimientoNoEncontradoException.class,
+                () -> service.eliminar(404, "tecnico@dimarsa.cl"));
+        verify(conocimientos, never()).guardar(any());
+    }
+
+    @Test
+    void eliminadoNoPuedeModificarseNiRepublicarse() {
+        when(conocimientos.buscarPorId(1)).thenReturn(Optional.empty());
+        assertThrows(ConocimientoNoEncontradoException.class, () -> service.modificar(1, "Nuevo", "Nueva",
+                null, null, null, null, null, "tecnico@dimarsa.cl"));
+        assertThrows(ConocimientoNoEncontradoException.class,
+                () -> service.cambiarEstado(1, EstadoConocimiento.PUBLICADO, "tecnico@dimarsa.cl"));
+        verify(conocimientos, never()).guardar(any());
     }
 
     private Usuario usuario() {

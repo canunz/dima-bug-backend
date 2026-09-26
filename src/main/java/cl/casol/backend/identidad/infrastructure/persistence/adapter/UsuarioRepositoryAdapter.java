@@ -8,7 +8,8 @@ import org.springframework.stereotype.Component;
 import java.util.Optional;
 import java.util.List;
 
-//Antes Mapper. Paso 6: Implementa y adpater voy a usar Spring Data JPA.
+//Antes Mapper. Paso 6: Buscar email usando JPA y devuelve un OBJETO DE DOMINO
+//Se junta applicacion, domain e infraestrcuture
 
 @Component
 public class UsuarioRepositoryAdapter implements UsuarioRepository {

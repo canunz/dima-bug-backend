@@ -16,13 +16,15 @@ import static org.mockito.Mockito.*;
 class MantenerCausaServiceTest {
     private ConocimientoRepository conocimientos;
     private CausaRepository causas;
+    private IndexarConocimientoService indexador;
     private MantenerCausaService service;
     private Conocimiento conocimiento;
 
     @BeforeEach void setUp() {
         conocimientos = mock(ConocimientoRepository.class);
         causas = mock(CausaRepository.class);
-        service = new MantenerCausaService(conocimientos, causas);
+        indexador = mock(IndexarConocimientoService.class);
+        service = new MantenerCausaService(conocimientos, causas, indexador);
         conocimiento = mock(Conocimiento.class);
     }
 
@@ -57,6 +59,7 @@ class MantenerCausaServiceTest {
         });
         Causa creada = service.crear(4, "Cola bloqueada", 3);
         assertEquals(new Causa(9, 4, "Cola bloqueada", 3), creada);
+        verify(indexador).indexar(4);
     }
 
     @Test void creaCausaConOrdenUnoCuandoSeOmite() {
@@ -77,6 +80,7 @@ class MantenerCausaServiceTest {
         when(causas.buscarPorId(9)).thenReturn(Optional.of(new Causa(9, 4, "Anterior", 1)));
         when(causas.guardar(any())).thenAnswer(invocation -> invocation.getArgument(0));
         assertEquals(new Causa(9, 4, "Nueva", 2), service.modificar(4, 9, "Nueva", 2));
+        verify(indexador).indexar(4);
     }
 
     @Test void modificarCausaInexistenteNoPersiste() {

@@ -19,12 +19,14 @@ public class GestionarPruebasConocimientoService {
     private final ConocimientoRepository conocimientos;
     private final PruebaRepository pruebas;
     private final ConocimientoPruebaRepository asociaciones;
+    private final IndexarConocimientoService indexador;
 
     public GestionarPruebasConocimientoService(ConocimientoRepository conocimientos, PruebaRepository pruebas,
-            ConocimientoPruebaRepository asociaciones) {
+            ConocimientoPruebaRepository asociaciones, IndexarConocimientoService indexador) {
         this.conocimientos = conocimientos;
         this.pruebas = pruebas;
         this.asociaciones = asociaciones;
+        this.indexador = indexador;
     }
 
     public List<Prueba> listarCatalogo() {
@@ -44,7 +46,10 @@ public class GestionarPruebasConocimientoService {
         if (asociaciones.existe(conocimientoId, pruebaId)) {
             throw new PruebaYaAsociadaException(conocimientoId, pruebaId);
         }
-        return asociaciones.guardar(new ConocimientoPrueba(conocimientoId, prueba, ordenOValorInicial(orden)));
+        ConocimientoPrueba guardada = asociaciones.guardar(
+                new ConocimientoPrueba(conocimientoId, prueba, ordenOValorInicial(orden)));
+        indexador.indexar(conocimientoId);
+        return guardada;
     }
 
     @Transactional
@@ -52,7 +57,10 @@ public class GestionarPruebasConocimientoService {
         verificarConocimiento(conocimientoId);
         ConocimientoPrueba actual = asociaciones.buscarPorIds(conocimientoId, pruebaId)
                 .orElseThrow(() -> new AsociacionPruebaNoEncontradaException(conocimientoId, pruebaId));
-        return asociaciones.guardar(new ConocimientoPrueba(conocimientoId, actual.prueba(), orden));
+        ConocimientoPrueba guardada = asociaciones.guardar(
+                new ConocimientoPrueba(conocimientoId, actual.prueba(), orden));
+        indexador.indexar(conocimientoId);
+        return guardada;
     }
 
     private void verificarConocimiento(Integer conocimientoId) {

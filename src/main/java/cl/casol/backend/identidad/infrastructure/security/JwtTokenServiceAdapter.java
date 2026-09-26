@@ -18,6 +18,8 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
+//JWT Paso 3:
+//Filtro JWT Paso 2: Agrega métodos para leer y validar el JWT
 @Component
 public class JwtTokenServiceAdapter implements TokenServicePort {
 

@@ -15,10 +15,13 @@ import java.util.List;
 public class MantenerMaterialApoyoService {
     private final ConocimientoRepository conocimientos;
     private final MaterialApoyoRepository materiales;
+    private final IndexarConocimientoService indexador;
 
-    public MantenerMaterialApoyoService(ConocimientoRepository conocimientos, MaterialApoyoRepository materiales) {
+    public MantenerMaterialApoyoService(ConocimientoRepository conocimientos, MaterialApoyoRepository materiales,
+            IndexarConocimientoService indexador) {
         this.conocimientos = conocimientos;
         this.materiales = materiales;
+        this.indexador = indexador;
     }
 
     public List<MaterialApoyo> listar(Integer conocimientoId) {
@@ -29,7 +32,9 @@ public class MantenerMaterialApoyoService {
     @Transactional
     public MaterialApoyo crear(Integer conocimientoId, String nombre, TipoMaterial tipo, String url) {
         verificarConocimiento(conocimientoId);
-        return materiales.guardar(new MaterialApoyo(null, conocimientoId, null, nombre, tipo, url));
+        MaterialApoyo guardado = materiales.guardar(new MaterialApoyo(null, conocimientoId, null, nombre, tipo, url));
+        indexador.indexar(conocimientoId);
+        return guardado;
     }
 
     @Transactional
@@ -40,7 +45,10 @@ public class MantenerMaterialApoyoService {
                 .filter(material -> conocimientoId.equals(material.conocimientoId()))
                 .filter(material -> material.pasoId() == null)
                 .orElseThrow(() -> new MaterialApoyoNoEncontradoException(materialId));
-        return materiales.guardar(new MaterialApoyo(actual.id(), conocimientoId, null, nombre, tipo, url));
+        MaterialApoyo guardado = materiales.guardar(
+                new MaterialApoyo(actual.id(), conocimientoId, null, nombre, tipo, url));
+        indexador.indexar(conocimientoId);
+        return guardado;
     }
 
     private void verificarConocimiento(Integer conocimientoId) {

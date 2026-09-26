@@ -7,7 +7,10 @@ import cl.casol.backend.identidad.domain.exception.CredencialesInvalidasExceptio
 import cl.casol.backend.identidad.domain.exception.UsuarioInactivoException;
 import org.springframework.stereotype.Service;
 
-// Paso 10: Servicio de aplicación para autenticar usuarios
+// CASO DE USO: B) La aplicación debe poder validar si el usuario existe, está activo y
+// tiene credenciales correctas.
+// Servicio de aplicación para autenticar usuarios
+//SERVICE: Con eso Spring detecta la clase y la registra como Bean.
 @Service
 public class AutenticarUsuarioService {
 

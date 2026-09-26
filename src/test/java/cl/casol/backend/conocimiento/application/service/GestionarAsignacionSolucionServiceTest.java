@@ -13,13 +13,13 @@ import static org.mockito.Mockito.*;
 
 class GestionarAsignacionSolucionServiceTest {
     ConocimientoRepository conocimientos; SolucionRepository soluciones; SolucionAsignacionRepository asignaciones;
-    DepartamentoRepository departamentos; ResponsableRepository responsables; GestionarAsignacionSolucionService service;
+    DepartamentoRepository departamentos; ResponsableRepository responsables; IndexarConocimientoService indexador; GestionarAsignacionSolucionService service;
     Departamento depto=new Departamento(1,"Soporte TI",true);
     Responsable responsable=new Responsable(5,1,"Juan Pérez","Técnico",null,true);
     @BeforeEach void setUp() { conocimientos=mock(ConocimientoRepository.class); soluciones=mock(SolucionRepository.class);
         asignaciones=mock(SolucionAsignacionRepository.class); departamentos=mock(DepartamentoRepository.class);
-        responsables=mock(ResponsableRepository.class); service=new GestionarAsignacionSolucionService(
-                conocimientos,soluciones,asignaciones,departamentos,responsables); }
+        responsables=mock(ResponsableRepository.class); indexador=mock(IndexarConocimientoService.class); service=new GestionarAsignacionSolucionService(
+                conocimientos,soluciones,asignaciones,departamentos,responsables,indexador); }
     void padres() { when(conocimientos.buscarPorId(4)).thenReturn(Optional.of(mock(Conocimiento.class)));
         when(soluciones.buscarPorId(8)).thenReturn(Optional.of(new Solucion(8,4,"S",TipoSolucion.DERIVACION,1))); }
     @Test void listaOrdenadaPrincipalLuegoId() { padres(); when(asignaciones.buscarPorSolucionOrdenadas(8)).thenReturn(List.of(
@@ -35,7 +35,7 @@ class GestionarAsignacionSolucionServiceTest {
         assertThrows(SolucionNoEncontradaException.class,()->service.listar(4,8)); }
     @Test void creaPorDepartamentoConPrincipalPorDefecto() { padres(); when(departamentos.buscarActivoPorId(1)).thenReturn(Optional.of(depto));
         when(asignaciones.guardar(any())).thenAnswer(i->i.getArgument(0)); SolucionAsignacion a=service.crear(4,8,1,null,null);
-        assertEquals(depto,a.departamento()); assertNull(a.responsable()); assertTrue(a.principal()); }
+        assertEquals(depto,a.departamento()); assertNull(a.responsable()); assertTrue(a.principal()); verify(indexador).indexar(4); }
     @Test void creaPorResponsable() { padres(); when(responsables.buscarActivoPorId(5)).thenReturn(Optional.of(responsable));
         when(asignaciones.guardar(any())).thenAnswer(i->i.getArgument(0)); assertEquals(responsable,service.crear(4,8,null,5,false).responsable()); }
     @Test void creaAmbosCoherentes() { padres(); when(departamentos.buscarActivoPorId(1)).thenReturn(Optional.of(depto));
@@ -52,7 +52,7 @@ class GestionarAsignacionSolucionServiceTest {
     @Test void modificaAsignacionPerteneciente() { padres(); when(asignaciones.buscarPorId(10)).thenReturn(Optional.of(
             new SolucionAsignacion(10,8,null,depto,true))); when(responsables.buscarActivoPorId(5)).thenReturn(Optional.of(responsable));
         when(asignaciones.guardar(any())).thenAnswer(i->i.getArgument(0)); SolucionAsignacion a=service.modificar(4,8,10,null,5,false);
-        assertEquals(10,a.id()); assertFalse(a.principal()); }
+        assertEquals(10,a.id()); assertFalse(a.principal()); verify(indexador).indexar(4); }
     @Test void asignacionInexistente() { padres(); when(asignaciones.buscarPorId(10)).thenReturn(Optional.empty());
         assertThrows(AsignacionSolucionNoEncontradaException.class,()->service.modificar(4,8,10,1,null,true)); }
     @Test void asignacionDeOtraSolucion() { padres(); when(asignaciones.buscarPorId(10)).thenReturn(Optional.of(

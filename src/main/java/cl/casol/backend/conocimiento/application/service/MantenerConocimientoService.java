@@ -25,16 +25,18 @@ public class MantenerConocimientoService {
     private final ModuloRepository modulos;
     private final FrecuenciaRepository frecuencias;
     private final UsuarioRepository usuarios;
+    private final IndexarConocimientoService indexador;
 
     public MantenerConocimientoService(ConocimientoRepository conocimientos, HardwareRepository hardware,
             SistemaRepository sistemas, ModuloRepository modulos, FrecuenciaRepository frecuencias,
-            UsuarioRepository usuarios) {
+            UsuarioRepository usuarios, IndexarConocimientoService indexador) {
         this.conocimientos = conocimientos;
         this.hardware = hardware;
         this.sistemas = sistemas;
         this.modulos = modulos;
         this.frecuencias = frecuencias;
         this.usuarios = usuarios;
+        this.indexador = indexador;
     }
 
     public List<Conocimiento> listar() { return conocimientos.buscarTodos(); }
@@ -49,9 +51,11 @@ public class MantenerConocimientoService {
         Clasificacion clasificacion = validarClasificacion(hardwareId, sistemaId, moduloId, frecuenciaId);
         Usuario usuario = obtenerUsuario(emailAutenticado);
         LocalDateTime ahora = LocalDateTime.now();
-        return conocimientos.guardar(new Conocimiento(null, titulo, descripcion, EstadoConocimiento.BORRADOR,
+        Conocimiento guardado = conocimientos.guardar(new Conocimiento(null, titulo, descripcion, EstadoConocimiento.BORRADOR,
                 clasificacion.hardware(), clasificacion.sistema(), clasificacion.modulo(),
                 clasificacion.frecuencia(), comentario, usuario, ahora, null, null));
+        indexador.indexar(guardado.getId());
+        return guardado;
     }
 
     @Transactional
@@ -61,20 +65,38 @@ public class MantenerConocimientoService {
         Conocimiento actual = buscar(id);
         Clasificacion clasificacion = validarClasificacion(hardwareId, sistemaId, moduloId, frecuenciaId);
         Usuario usuario = obtenerUsuario(emailAutenticado);
-        return conocimientos.guardar(new Conocimiento(actual.getId(), titulo, descripcion, actual.getEstado(),
+        Conocimiento guardado = conocimientos.guardar(new Conocimiento(actual.getId(), titulo, descripcion, actual.getEstado(),
                 clasificacion.hardware(), clasificacion.sistema(), clasificacion.modulo(),
                 clasificacion.frecuencia(), comentario, actual.getCreadoPor(), actual.getFechaCreacion(),
                 usuario, LocalDateTime.now()));
+        indexador.indexar(id);
+        return guardado;
     }
 
     @Transactional
     public Conocimiento cambiarEstado(Integer id, EstadoConocimiento estado, String emailAutenticado) {
         Conocimiento actual = buscar(id);
         Usuario usuario = obtenerUsuario(emailAutenticado);
-        return conocimientos.guardar(new Conocimiento(actual.getId(), actual.getTitulo(),
+        Conocimiento guardado = conocimientos.guardar(new Conocimiento(actual.getId(), actual.getTitulo(),
                 actual.getDescripcion(), estado, actual.getHardware(), actual.getSistema(), actual.getModulo(),
                 actual.getFrecuencia(), actual.getComentario(), actual.getCreadoPor(),
                 actual.getFechaCreacion(), usuario, LocalDateTime.now()));
+        indexador.indexar(id);
+        return guardado;
+    }
+
+    @Transactional
+    public void eliminar(Integer id, String emailAutenticado) {
+        Conocimiento actual = conocimientos.buscarPorIdIncluidoEliminado(id)
+                .orElseThrow(() -> new ConocimientoNoEncontradoException(id));
+        if (actual.getEstado() == EstadoConocimiento.ELIMINADO) return;
+
+        Usuario usuario = obtenerUsuario(emailAutenticado);
+        conocimientos.guardar(new Conocimiento(actual.getId(), actual.getTitulo(), actual.getDescripcion(),
+                EstadoConocimiento.ELIMINADO, actual.getHardware(), actual.getSistema(), actual.getModulo(),
+                actual.getFrecuencia(), actual.getComentario(), actual.getCreadoPor(), actual.getFechaCreacion(),
+                usuario, LocalDateTime.now()));
+        indexador.eliminar(id);
     }
 
     private Usuario obtenerUsuario(String email) {

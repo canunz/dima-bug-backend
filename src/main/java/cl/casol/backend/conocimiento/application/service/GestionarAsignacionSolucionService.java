@@ -21,15 +21,17 @@ public class GestionarAsignacionSolucionService {
     private final SolucionAsignacionRepository asignaciones;
     private final DepartamentoRepository departamentos;
     private final ResponsableRepository responsables;
+    private final IndexarConocimientoService indexador;
 
     public GestionarAsignacionSolucionService(ConocimientoRepository conocimientos, SolucionRepository soluciones,
             SolucionAsignacionRepository asignaciones, DepartamentoRepository departamentos,
-            ResponsableRepository responsables) {
+            ResponsableRepository responsables, IndexarConocimientoService indexador) {
         this.conocimientos = conocimientos;
         this.soluciones = soluciones;
         this.asignaciones = asignaciones;
         this.departamentos = departamentos;
         this.responsables = responsables;
+        this.indexador = indexador;
     }
 
     public List<SolucionAsignacion> listar(Integer conocimientoId, Integer solucionId) {
@@ -42,8 +44,10 @@ public class GestionarAsignacionSolucionService {
             Integer responsableId, Boolean principal) {
         validarPadres(conocimientoId, solucionId);
         Destinatarios destinatarios = validarDestinatarios(departamentoId, responsableId);
-        return asignaciones.guardar(new SolucionAsignacion(null, solucionId, destinatarios.responsable(),
-                destinatarios.departamento(), principal == null || principal));
+        SolucionAsignacion guardada = asignaciones.guardar(new SolucionAsignacion(null, solucionId,
+                destinatarios.responsable(), destinatarios.departamento(), principal == null || principal));
+        indexador.indexar(conocimientoId);
+        return guardada;
     }
 
     @Transactional
@@ -54,8 +58,10 @@ public class GestionarAsignacionSolucionService {
                 .filter(asignacion -> solucionId.equals(asignacion.solucionId()))
                 .orElseThrow(() -> new AsignacionSolucionNoEncontradaException(asignacionId));
         Destinatarios destinatarios = validarDestinatarios(departamentoId, responsableId);
-        return asignaciones.guardar(new SolucionAsignacion(actual.id(), solucionId, destinatarios.responsable(),
-                destinatarios.departamento(), principal == null || principal));
+        SolucionAsignacion guardada = asignaciones.guardar(new SolucionAsignacion(actual.id(), solucionId,
+                destinatarios.responsable(), destinatarios.departamento(), principal == null || principal));
+        indexador.indexar(conocimientoId);
+        return guardada;
     }
 
     private void validarPadres(Integer conocimientoId, Integer solucionId) {

@@ -1,10 +1,15 @@
 package cl.casol.backend.conocimiento.infrastructure.web;
 
 import cl.casol.backend.conocimiento.application.service.MantenerConocimientoService;
+import cl.casol.backend.conocimiento.application.service.BuscarConocimientoService;
+import cl.casol.backend.conocimiento.domain.EstadoConocimiento;
+import cl.casol.backend.conocimiento.domain.exception.ClasificacionInvalidaException;
 import cl.casol.backend.conocimiento.infrastructure.web.dto.*;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,8 +18,23 @@ import java.util.List;
 @RequestMapping("/api/conocimientos")
 public class ConocimientoController {
     private final MantenerConocimientoService service;
+    private final BuscarConocimientoService buscador;
 
-    public ConocimientoController(MantenerConocimientoService service) { this.service = service; }
+    public ConocimientoController(MantenerConocimientoService service, BuscarConocimientoService buscador) {
+        this.service = service;
+        this.buscador = buscador;
+    }
+
+    @GetMapping("/buscar")
+    public List<BusquedaConocimientoResponse> buscar(
+            @RequestParam(required = false) String texto,
+            @RequestParam(required = false) Integer hardwareId,
+            @RequestParam(required = false) Integer sistemaId,
+            @RequestParam(required = false) Integer moduloId,
+            @RequestParam(required = false) Integer frecuenciaId) {
+        return buscador.buscar(texto, hardwareId, sistemaId, moduloId, frecuenciaId).stream()
+                .map(BusquedaConocimientoResponse::from).toList();
+    }
 
     @GetMapping
     public List<ConocimientoResponse> listar() {
@@ -46,6 +66,19 @@ public class ConocimientoController {
     @PatchMapping("/{id}/estado")
     public ConocimientoResponse cambiarEstado(@PathVariable Integer id,
             @Valid @RequestBody CambiarEstadoConocimientoRequest request, Authentication authentication) {
+        if (request.estado() == EstadoConocimiento.ELIMINADO) {
+            throw new ClasificacionInvalidaException("El estado ELIMINADO solo puede asignarse mediante DELETE");
+        }
+        if (request.estado() == EstadoConocimiento.PUBLICADO
+                && !authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMINISTRADOR"))) {
+            throw new AccessDeniedException("Solo un administrador puede publicar conocimiento");
+        }
         return ConocimientoResponse.from(service.cambiarEstado(id, request.estado(), authentication.getName()));
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void eliminar(@PathVariable Integer id, Authentication authentication) {
+        service.eliminar(id, authentication.getName());
     }
 }

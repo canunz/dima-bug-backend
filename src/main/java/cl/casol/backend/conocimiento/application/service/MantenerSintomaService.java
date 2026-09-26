@@ -14,10 +14,13 @@ import java.util.List;
 public class MantenerSintomaService {
     private final ConocimientoRepository conocimientos;
     private final SintomaRepository sintomas;
+    private final IndexarConocimientoService indexador;
 
-    public MantenerSintomaService(ConocimientoRepository conocimientos, SintomaRepository sintomas) {
+    public MantenerSintomaService(ConocimientoRepository conocimientos, SintomaRepository sintomas,
+            IndexarConocimientoService indexador) {
         this.conocimientos = conocimientos;
         this.sintomas = sintomas;
+        this.indexador = indexador;
     }
 
     public List<Sintoma> listar(Integer conocimientoId) {
@@ -28,7 +31,9 @@ public class MantenerSintomaService {
     @Transactional
     public Sintoma crear(Integer conocimientoId, String descripcion, Integer orden) {
         verificarConocimiento(conocimientoId);
-        return sintomas.guardar(new Sintoma(null, conocimientoId, descripcion, ordenOValorInicial(orden)));
+        Sintoma guardado = sintomas.guardar(new Sintoma(null, conocimientoId, descripcion, ordenOValorInicial(orden)));
+        indexador.indexar(conocimientoId);
+        return guardado;
     }
 
     @Transactional
@@ -37,7 +42,9 @@ public class MantenerSintomaService {
         Sintoma actual = sintomas.buscarPorId(sintomaId)
                 .filter(sintoma -> conocimientoId.equals(sintoma.conocimientoId()))
                 .orElseThrow(() -> new SintomaNoEncontradoException(sintomaId));
-        return sintomas.guardar(new Sintoma(actual.id(), conocimientoId, descripcion, ordenOValorInicial(orden)));
+        Sintoma guardado = sintomas.guardar(new Sintoma(actual.id(), conocimientoId, descripcion, ordenOValorInicial(orden)));
+        indexador.indexar(conocimientoId);
+        return guardado;
     }
 
     private void verificarConocimiento(Integer conocimientoId) {

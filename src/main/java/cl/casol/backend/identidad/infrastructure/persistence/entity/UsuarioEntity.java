@@ -1,6 +1,6 @@
 package cl.casol.backend.identidad.infrastructure.persistence.entity;
 
-//Paso 3: representa cómo está guardado el usuario en MySQL.
+//Paso 3: Representa cómo está guardado el usuario en MySQL.
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 

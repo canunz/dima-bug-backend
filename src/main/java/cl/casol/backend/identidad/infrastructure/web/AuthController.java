@@ -11,7 +11,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+//Paso III: Endpoint
 
+//JWT Paso 5: Agregamos de application TokenServicePort
+//Fin para la entrega de credenciales
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {

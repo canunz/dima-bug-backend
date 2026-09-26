@@ -9,9 +9,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class MantenerMaterialApoyoServiceTest {
-    ConocimientoRepository conocimientos; MaterialApoyoRepository materiales; MantenerMaterialApoyoService service;
+    ConocimientoRepository conocimientos; MaterialApoyoRepository materiales; IndexarConocimientoService indexador; MantenerMaterialApoyoService service;
     @BeforeEach void setUp() { conocimientos=mock(ConocimientoRepository.class); materiales=mock(MaterialApoyoRepository.class);
-        service=new MantenerMaterialApoyoService(conocimientos,materiales); }
+        indexador=mock(IndexarConocimientoService.class); service=new MantenerMaterialApoyoService(conocimientos,materiales,indexador); }
     void existe() { when(conocimientos.buscarPorId(4)).thenReturn(Optional.of(mock(Conocimiento.class))); }
     @Test void listaMaterialesDirectos() { existe(); when(materiales.buscarDirectosPorConocimiento(4)).thenReturn(List.of(
             new MaterialApoyo(1,4,null,"Manual",TipoMaterial.PDF,"manual.pdf")));
@@ -26,7 +26,7 @@ class MantenerMaterialApoyoServiceTest {
         assertThrows(ConocimientoNoEncontradoException.class,()->service.crear(4,"M",TipoMaterial.PDF,"url")); }
     @Test void modificaMaterialDirecto() { existe(); when(materiales.buscarPorId(2)).thenReturn(Optional.of(
             new MaterialApoyo(2,4,null,"Viejo",TipoMaterial.IMAGEN,"a"))); when(materiales.guardar(any())).thenAnswer(i->i.getArgument(0));
-        assertEquals(new MaterialApoyo(2,4,null,"Nuevo",TipoMaterial.PDF,"b"),service.modificar(4,2,"Nuevo",TipoMaterial.PDF,"b")); }
+        assertEquals(new MaterialApoyo(2,4,null,"Nuevo",TipoMaterial.PDF,"b"),service.modificar(4,2,"Nuevo",TipoMaterial.PDF,"b")); verify(indexador).indexar(4); }
     @Test void modificarMaterialInexistente() { existe(); when(materiales.buscarPorId(2)).thenReturn(Optional.empty());
         assertThrows(MaterialApoyoNoEncontradoException.class,()->service.modificar(4,2,"N",TipoMaterial.PDF,"u")); }
     @Test void modificarMaterialOtroConocimiento() { existe(); when(materiales.buscarPorId(2)).thenReturn(Optional.of(
