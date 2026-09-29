@@ -21,6 +21,12 @@ public class MaterialApoyoRepositoryAdapter implements MaterialApoyoRepository {
     }
 
     @Override
+    public List<MaterialApoyo> buscarPorPaso(Integer pasoId) {
+        return repository.findByPasoIdAndConocimientoIdIsNullOrderByIdAsc(pasoId).stream()
+                .map(MaterialApoyoMapper::toDomain).toList();
+    }
+
+    @Override
     public Optional<MaterialApoyo> buscarPorId(Integer id) {
         return repository.findById(id).map(MaterialApoyoMapper::toDomain);
     }

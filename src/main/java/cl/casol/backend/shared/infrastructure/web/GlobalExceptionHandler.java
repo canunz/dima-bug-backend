@@ -21,6 +21,14 @@ import cl.casol.backend.identidad.domain.exception.RolNoEncontradoException;
 import cl.casol.backend.identidad.domain.exception.UsuarioNoEncontradoException;
 import cl.casol.backend.identidad.domain.exception.DepartamentoNoEncontradoException;
 import cl.casol.backend.identidad.domain.exception.ResponsableNoEncontradoException;
+import cl.casol.backend.procedimiento.domain.exception.ProcedimientoNoEncontradoException;
+import cl.casol.backend.procedimiento.domain.exception.PasoNoEncontradoException;
+import cl.casol.backend.procedimiento.domain.exception.OrdenPasoDuplicadoException;
+import cl.casol.backend.procedimiento.domain.exception.EstadoProcedimientoInvalidoException;
+import cl.casol.backend.ejecucion.domain.exception.EjecucionNoEncontradaException;
+import cl.casol.backend.ejecucion.domain.exception.EjecucionPasoNoEncontradoException;
+import cl.casol.backend.ejecucion.domain.exception.ReglaEjecucionException;
+import cl.casol.backend.seguimiento.domain.exception.EstadoConocimientoNoEvaluableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -40,12 +48,15 @@ public class GlobalExceptionHandler {
             CausaNoEncontradaException.class, PruebaNoEncontradaException.class,
             AsociacionPruebaNoEncontradaException.class, SolucionNoEncontradaException.class,
             AsignacionSolucionNoEncontradaException.class, ResponsableNoEncontradoException.class,
-            MaterialApoyoNoEncontradoException.class})
+            MaterialApoyoNoEncontradoException.class, ProcedimientoNoEncontradoException.class,
+            PasoNoEncontradoException.class, EjecucionNoEncontradaException.class,
+            EjecucionPasoNoEncontradoException.class})
     public ResponseEntity<Map<String, String>> handleNoEncontrado(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", ex.getMessage()));
     }
 
-    @ExceptionHandler({EmailDuplicadoException.class, PruebaYaAsociadaException.class})
+    @ExceptionHandler({EmailDuplicadoException.class, PruebaYaAsociadaException.class,
+            OrdenPasoDuplicadoException.class})
     public ResponseEntity<Map<String, String>> handleConflicto(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
     }
@@ -57,7 +68,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({RolInactivoException.class, AutoDesactivacionException.class,
-            ClasificacionInvalidaException.class, AsignacionSolucionInvalidaException.class})
+            ClasificacionInvalidaException.class, AsignacionSolucionInvalidaException.class,
+            EstadoProcedimientoInvalidoException.class, ReglaEjecucionException.class,
+            EstadoConocimientoNoEvaluableException.class})
     public ResponseEntity<Map<String, String>> handleReglaNegocio(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
     }

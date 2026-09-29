@@ -47,7 +47,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/conocimientos/*")
                         .hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/sistemas/**", "/api/hardware/**", "/api/conocimientos/**",
-                                "/api/frecuencias/**", "/api/departamentos/**", "/api/pruebas/**")
+                                "/api/frecuencias/**", "/api/departamentos/**", "/api/pruebas/**",
+                                "/api/procedimientos/**", "/api/ejecuciones/**")
                         .hasAnyRole("ADMINISTRADOR", "TECNICO")
                         .requestMatchers("/api/usuarios/**", "/api/roles/**")
                         .hasRole("ADMINISTRADOR")

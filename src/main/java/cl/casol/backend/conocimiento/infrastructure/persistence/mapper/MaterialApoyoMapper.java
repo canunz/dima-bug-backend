@@ -12,7 +12,7 @@ public final class MaterialApoyoMapper {
     }
 
     public static MaterialApoyoEntity toEntity(MaterialApoyo material) {
-        return new MaterialApoyoEntity(material.id(), material.conocimientoId(), null,
+        return new MaterialApoyoEntity(material.id(), material.conocimientoId(), material.pasoId(),
                 material.nombre(), material.tipo(), material.url());
     }
 }

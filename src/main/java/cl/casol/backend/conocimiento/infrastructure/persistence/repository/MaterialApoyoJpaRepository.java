@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface MaterialApoyoJpaRepository extends JpaRepository<MaterialApoyoEntity, Integer> {
     List<MaterialApoyoEntity> findByConocimientoIdAndPasoIdIsNullOrderByIdAsc(Integer conocimientoId);
+    List<MaterialApoyoEntity> findByPasoIdAndConocimientoIdIsNullOrderByIdAsc(Integer pasoId);
 }
