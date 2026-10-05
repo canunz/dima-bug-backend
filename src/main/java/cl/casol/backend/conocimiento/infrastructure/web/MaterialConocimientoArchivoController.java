@@ -23,4 +23,9 @@ public class MaterialConocimientoArchivoController {
     public ResponseEntity<byte[]> descargar(@PathVariable Integer conocimientoId, @PathVariable Integer materialId) {
         return ArchivoHttp.respuesta(service.descargar(conocimientoId, materialId));
     }
+    @DeleteMapping("/{materialId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void eliminar(@PathVariable Integer conocimientoId, @PathVariable Integer materialId) {
+        service.eliminar(conocimientoId, materialId);
+    }
 }

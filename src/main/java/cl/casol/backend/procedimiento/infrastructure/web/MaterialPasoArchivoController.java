@@ -24,4 +24,9 @@ public class MaterialPasoArchivoController {
             @PathVariable Integer materialId) {
         return ArchivoHttp.respuesta(service.descargar(procedimientoId, pasoId, materialId));
     }
+    @DeleteMapping("/{materialId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void eliminar(@PathVariable Integer procedimientoId, @PathVariable Integer pasoId, @PathVariable Integer materialId) {
+        service.eliminar(procedimientoId, pasoId, materialId);
+    }
 }

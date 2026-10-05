@@ -10,6 +10,21 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class AlmacenamientoArchivoFilesystemAdapterTest {
     @TempDir Path directorio;
+    @Test void eliminaArchivoFisicoYEsIdempotente() throws Exception {
+        var adapter = new AlmacenamientoArchivoFilesystemAdapter(directorio.toString());
+        String ref = adapter.guardar(new byte[]{1,2,3});
+        adapter.eliminar(ref); adapter.eliminar(ref);
+        assertFalse(Files.exists(directorio.resolve(FormatoArchivo.clave(ref))));
+        try(var archivos = Files.list(directorio)) {assertEquals(0,archivos.count());}
+    }
+    @Test void falloFisicoNoExponeRuta() throws Exception {
+        var adapter = new AlmacenamientoArchivoFilesystemAdapter(directorio.toString());
+        Path destino = directorio.resolve("9d50c602-4bf2-438a-82c3-e197c9153250");
+        Files.createDirectory(destino); Files.write(destino.resolve("hijo"),new byte[]{1});
+        ArchivoException ex = assertThrows(ArchivoException.class,()->adapter.eliminar(FormatoArchivo.PREFIJO+destino.getFileName()));
+        assertEquals(ArchivoException.Motivo.ALMACENAMIENTO,ex.motivo());
+        assertFalse(ex.getMessage().contains(directorio.toString())); assertTrue(Files.exists(destino));
+    }
     @Test void guardaConUuidLeeYCompensa() throws Exception {
         var adapter = new AlmacenamientoArchivoFilesystemAdapter(directorio.toString());
         byte[] contenido = "%PDF-1.7".getBytes();
@@ -28,6 +43,7 @@ class AlmacenamientoArchivoFilesystemAdapterTest {
         var adapter = new AlmacenamientoArchivoFilesystemAdapter(directorio.toString());
         assertThrows(ArchivoException.class, () -> adapter.leer(ref));
         assertThrows(ArchivoException.class, () -> adapter.compensar(ref));
+        assertThrows(ArchivoException.class, () -> adapter.eliminar(ref));
     }
     @Test void noSobrescribeArchivos() {
         var adapter = new AlmacenamientoArchivoFilesystemAdapter(directorio.toString());

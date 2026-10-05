@@ -32,6 +32,13 @@ public class MaterialApoyoRepositoryAdapter implements MaterialApoyoRepository {
     }
 
     @Override
+    public void eliminar(Integer id) {
+        repository.deleteById(id);
+        // Hace observable el borrado para la reindexación JDBC dentro de la misma transacción.
+        repository.flush();
+    }
+
+    @Override
     public MaterialApoyo guardar(MaterialApoyo material) {
         return MaterialApoyoMapper.toDomain(repository.save(MaterialApoyoMapper.toEntity(material)));
     }
