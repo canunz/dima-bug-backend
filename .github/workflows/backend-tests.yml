@@ -1,0 +1,86 @@
+name: Backend tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  habitual:
+    name: Pruebas habituales
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Preparar Java 21 y caché Maven
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: pom.xml
+
+      # El wrapper está registrado en Git como 100644.
+      - name: Habilitar Maven Wrapper en el runner
+        run: chmod +x mvnw
+
+      - name: Ejecutar pruebas habituales
+        run: ./mvnw -B test
+
+      - name: Publicar reportes Surefire
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          if-no-files-found: warn
+          retention-days: 14
+
+  integration-mysql:
+    name: Integración MySQL temporal
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      DOCKER_HOST: unix:///var/run/docker.sock
+      TESTCONTAINERS_REUSE_ENABLE: 'false'
+      TESTCONTAINERS_RYUK_DISABLED: 'false'
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Preparar Java 21 y caché Maven
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: pom.xml
+
+      - name: Habilitar Maven Wrapper en el runner
+        run: chmod +x mvnw
+
+      - name: Verificar Docker Engine local
+        run: |
+          test -S /var/run/docker.sock
+          docker version --format '{{.Server.Version}}'
+
+      - name: Ejecutar integración MySQL
+        run: ./mvnw -B -Pintegration-mysql verify
+
+      - name: Publicar reportes Failsafe
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: failsafe-reports
+          path: target/failsafe-reports/
+          if-no-files-found: warn
+          retention-days: 14
